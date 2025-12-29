@@ -59,8 +59,8 @@ sunLight.castShadow = true;
 sunLight.shadow.bias = -0.0001; 
 sunLight.shadow.normalBias = 0.02; 
 sunLight.shadow.radius = 1.5; 
-sunLight.shadow.mapSize.width = 4096;
-sunLight.shadow.mapSize.height = 4096;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
 scene.add(sunLight);
 
 const loader = new THREE.TextureLoader();
@@ -311,6 +311,63 @@ window.addEventListener("resize", ()=>{
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth,window.innerHeight);
 });
+
+// =========================================
+// PLANET HOVER HIGHLIGHT 
+// =========================================
+const hoverTip = document.createElement('div');
+hoverTip.style.position = 'absolute';
+hoverTip.style.padding = '6px 10px';
+hoverTip.style.background = 'rgba(20,20,20,0.85)';
+hoverTip.style.color = '#fff';
+hoverTip.style.fontSize = '12px';
+hoverTip.style.borderRadius = '6px';
+hoverTip.style.pointerEvents = 'none';
+hoverTip.style.display = 'none';
+hoverTip.style.zIndex = '999';
+document.body.appendChild(hoverTip);
+
+let lastHovered = null;
+
+window.addEventListener('mousemove', e => {
+    if (focusTarget) { // skip hover when a planet is focused
+        hoverTip.style.display = 'none'; // hide hover tip if focusing
+        if (lastHovered) {
+            lastHovered.material.emissive.set(0x000000);
+            lastHovered = null;
+        }
+        return;
+    }
+
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(interactiveObjects);
+
+    if (hits.length > 0) {
+        const obj = hits[0].object;
+        hoverTip.innerText = obj.userData.name;
+        hoverTip.style.left = e.clientX + 12 + 'px';
+        hoverTip.style.top = e.clientY + 12 + 'px';
+        hoverTip.style.display = 'block';
+
+        // Highlight planet
+        if (lastHovered && lastHovered !== obj) {
+            lastHovered.material.emissive.set(0x000000); // reset previous
+        }
+        obj.material.emissive.set(0x333333);
+        lastHovered = obj;
+    } else {
+        hoverTip.style.display = 'none';
+        if (lastHovered) {
+            lastHovered.material.emissive.set(0x000000); // reset
+            lastHovered = null;
+        }
+    }
+});
+
 
 // =========================================
 // 8. ANIMATION LOOP
